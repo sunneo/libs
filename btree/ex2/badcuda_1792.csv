@@ -1,0 +1,10 @@
+name,count,time,avg
+insert.bpt_insert   ,3670016   ,1370.065691,0.373313  
+insert.simple_insertion,3674600   ,40.343122 ,0.010979  
+insert.split_insertion,4584      ,0.153514  ,0.033489  
+bpt_node_find_pos   ,28608284  ,6653.646243,0.232578  
+bpt_node_find_pos_cuda,28608284  ,6619.976696,0.231401  
+delete.bpt_delete   ,1835008   ,1356.314984,0.739133  
+delete.delete_entry ,1836902   ,13.335815 ,0.007260  
+delete.merge_nodes  ,1894      ,0.013356  ,0.007052  
+delete.adjust_root  ,4         ,0.000002  ,0.000536  

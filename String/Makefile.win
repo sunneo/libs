@@ -1,0 +1,29 @@
+# Project: String
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++
+CC   = gcc
+RES  = 
+OBJ  = main.o string.o $(RES)
+LINKOBJ  = main.o string.o $(RES)
+BIN  = String
+CXXFLAGS = $(CXXINCS)   -unroll-loops -unroll-all-loops
+CFLAGS = $(INCS)   -unroll-loops -unroll-all-loops
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before String all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(LINKOBJ) -o "String.exe" $(LIBS)
+
+main.o: main.c
+	$(CC) -c main.c -o main.o $(CFLAGS)
+
+cstring.o: cstring.c
+	$(CC) -c cstring.c -o cstring.o $(CFLAGS)

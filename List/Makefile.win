@@ -1,0 +1,37 @@
+# Project: List
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = obj/list.o obj/main.o obj/listiter.o $(RES)
+LINKOBJ  = obj/list.o obj/main.o obj/listiter.o $(RES)
+LIBS =  -L"D:/Dev-Cpp/lib"  -s 
+INCS =  -I"D:/Dev-Cpp/include"  -I"include" 
+CXXINCS =  -I"D:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"D:/Dev-Cpp/include/c++/3.4.2/backward"  -I"D:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"D:/Dev-Cpp/include/c++/3.4.2"  -I"D:/Dev-Cpp/include"  -I"include" 
+BIN  = bin/List.a
+CXXFLAGS = $(CXXINCS)   -ansi -fexpensive-optimizations -O3
+CFLAGS = $(INCS)   -ansi -fexpensive-optimizations -O3
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before bin/List.a all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(LINKOBJ)
+	ar r $(BIN) $(LINKOBJ)
+	ranlib $(BIN)
+
+obj/list.o: src/list.c
+	$(CC) -c src/list.c -o obj/list.o $(CFLAGS)
+
+obj/main.o: src/main.c
+	$(CC) -c src/main.c -o obj/main.o $(CFLAGS)
+
+obj/listiter.o: src/listiter.c
+	$(CC) -c src/listiter.c -o obj/listiter.o $(CFLAGS)

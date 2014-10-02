@@ -1,0 +1,82 @@
+#include "vector.h"
+#include <stdlib.h>
+
+typedef struct tagVectorIterator{
+   Vector* vector;
+   int idx;
+}VectorIterator;
+
+VectorIter VECTORCall
+vector_get_iter(const Vector* a){
+   VectorIterator* iter;
+   if(a == 0) return 0;
+   iter = (VectorIterator*)malloc(sizeof(VectorIterator));
+   iter->vector = (Vector*)a;
+   iter->idx = 0;
+   return (VectorIter)iter;
+}
+
+static int (VECTORCall *hasNextFunc[2])(const VectorIter) = { vector_iter_hasPrev,vector_iter_hasNext };
+static int nextDirTable[2] = {-1,1};
+
+
+void* VECTORCall
+vector_iter_next_helper(VectorIter iter,int dir){
+   void* ret = 0;
+   if( iter != 0 && hasNextFunc[dir](iter) ){
+      ret = vector_iter_data(iter);
+      ((VectorIterator*)iter)->idx+=nextDirTable[dir];
+   }
+   return ret;
+}
+
+void* VECTORCall
+vector_iter_next(VectorIter iter){
+   return vector_iter_next_helper(iter,1);
+}
+
+int VECTORCall
+vector_iter_hasNext(const VectorIter iter){
+   return iter!=0
+          && ( ((VectorIterator*)iter)->idx < vector_size( ((VectorIterator*)iter)->vector));
+}
+
+int VECTORCall
+vector_iter_hasPrev(const VectorIter iter){
+   return iter!=0
+          && ( ((VectorIterator*)iter)->idx != 0);
+}
+
+void* VECTORCall
+vector_iter_prev(VectorIter iter){
+   return vector_iter_next_helper(iter,0);
+}
+
+void*  VECTORCall
+vector_iter_data(const VectorIter iter){
+   return iter?vector_at(((VectorIterator*)iter)->vector,((VectorIterator*)iter)->idx):0;
+}
+
+void VECTORCall
+vector_iter_rewind(VectorIter iter){
+   if(iter) {
+      ((VectorIterator*)iter)->idx = 0;
+   }
+}
+
+void VECTORCall
+vector_iter_delete(VectorIter iter){
+   if(iter) {
+      free(iter);
+   }
+}
+
+int VECTORCall
+vector_iter_getIdx(const VectorIter iter){
+   return iter?((VectorIterator*)iter)->idx:0;
+}
+
+Vector* VECTORCall
+vector_iter_getVector(const VectorIter iter){
+   return iter?((VectorIterator*)iter)->vector:0;
+}

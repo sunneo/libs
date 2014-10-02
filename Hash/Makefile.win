@@ -1,0 +1,42 @@
+# Project: HashTable
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = obj/main.o obj/hashtbl.o obj/hashkey_iter.o obj/list.o obj/listiter.o $(RES)
+LINKOBJ  = obj/main.o obj/hashtbl.o obj/hashkey_iter.o obj/list.o obj/listiter.o $(RES)
+LIBS =  -L"C:/IDE/Dev-Cpp/lib" -L"lib/List/bin"  -s 
+INCS =  -I"C:/IDE/Dev-Cpp/include"  -I"include"  -I"lib/List/include" 
+CXXINCS =  -I"C:/IDE/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/IDE/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/IDE/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/IDE/Dev-Cpp/include/c++/3.4.2"  -I"C:/IDE/Dev-Cpp/include"  -I"include"  -I"lib/List/include" 
+BIN  = bin/HashTable.exe
+CXXFLAGS = $(CXXINCS)   -fexpensive-optimizations -O3
+CFLAGS = $(INCS)   -fexpensive-optimizations -O3
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before bin/HashTable.exe all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(LINKOBJ) -o "bin\HashTable.exe" $(LIBS)
+
+obj/main.o: src/main.c
+	$(CC) -c src/main.c -o obj/main.o $(CFLAGS)
+
+obj/hashtbl.o: src/hashtbl.c
+	$(CC) -c src/hashtbl.c -o obj/hashtbl.o $(CFLAGS)
+
+obj/hashkey_iter.o: src/hashkey_iter.c
+	$(CC) -c src/hashkey_iter.c -o obj/hashkey_iter.o $(CFLAGS)
+
+obj/list.o: lib/List/src/list.c
+	$(CC) -c lib/List/src/list.c -o obj/list.o $(CFLAGS)
+
+obj/listiter.o: lib/List/src/listiter.c
+	$(CC) -c lib/List/src/listiter.c -o obj/listiter.o $(CFLAGS)

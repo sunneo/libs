@@ -1,0 +1,13 @@
+insert1 pass
+delete1 pass
+integrity check passed
+name,count,time,avg
+insert.bpt_insert   ,3670016   ,60.179523 ,0.016398  
+insert.simple_insertion,3674600   ,34.527972 ,0.009396  
+insert.split_insertion,4584      ,0.130328  ,0.028431  
+bpt_node_find_pos   ,28608284  ,354.994541,0.012409  
+bpt_node_find_pos_cuda,28608284  ,323.821802,0.011319  
+delete.bpt_delete   ,1835008   ,106.107304,0.057824  
+delete.delete_entry ,1836902   ,13.320892 ,0.007252  
+delete.merge_nodes  ,1894      ,0.014309  ,0.007555  
+delete.adjust_root  ,4         ,0.000002  ,0.000477  

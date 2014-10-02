@@ -1,0 +1,37 @@
+# Project: Vector
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = main.o vector.o vector_iter.o $(RES)
+LINKOBJ  = main.o vector.o vector_iter.o $(RES)
+LIBS =  -L"D:/Dev-Cpp/lib"  -s 
+INCS =  -I"D:/Dev-Cpp/include" 
+CXXINCS =  -I"D:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"D:/Dev-Cpp/include/c++/3.4.2/backward"  -I"D:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"D:/Dev-Cpp/include/c++/3.4.2"  -I"D:/Dev-Cpp/include" 
+BIN  = Vector.a
+CXXFLAGS = $(CXXINCS)   -ansi -fexceptions -fexpensive-optimizations -O3
+CFLAGS = $(INCS)   -ansi -fexceptions -fexpensive-optimizations -O3
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before Vector.a all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(LINKOBJ)
+	ar r $(BIN) $(LINKOBJ)
+	ranlib $(BIN)
+
+main.o: main.c
+	$(CC) -c main.c -o main.o $(CFLAGS)
+
+vector.o: vector.c
+	$(CC) -c vector.c -o vector.o $(CFLAGS)
+
+vector_iter.o: vector_iter.c
+	$(CC) -c vector_iter.c -o vector_iter.o $(CFLAGS)

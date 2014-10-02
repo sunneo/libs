@@ -1,0 +1,2 @@
+cd bin
+gcc -shared -fPIC ../obj/bst.o obj/bst_iter.o -o ../bin/libbst.so  ./libstack.so
