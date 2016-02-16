@@ -27,6 +27,7 @@ typedef union FiberYieldValue{
 }FiberYieldValue;
 
 typedef struct Fiber{
+   struct Fiber* parent;
    ucontext_t ctx;
    int id;
    int8_t status;

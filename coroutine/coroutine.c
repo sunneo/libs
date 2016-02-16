@@ -35,6 +35,7 @@ Fiber* fiber_create(void(*fnc)(void*),void* parm){
    ret->ctx.uc_stack.ss_size = gFiberStackSize;
    ret->ctx.uc_stack.ss_flags = 0;
    ret->ctx.uc_link=&co_sched->ctx; 
+   ret->parent = co_current;
    makecontext(&ret->ctx,(void(*)())fiber_stub,1,ret);
    return ret;
 }
@@ -64,7 +65,12 @@ void fiber_delete(Fiber* fiber){
 void fiber_yield(FiberYieldValue value){
    if(NULL==co_current) return;
    co_current->value = value;
-   fiber_yieldto(co_current,co_sched);
+   if(co_current->parent != NULL){
+      fiber_yieldto(co_current,co_current->parent);
+   }
+   else{
+      fiber_yieldto(co_current,co_sched);
+   }
 }
 void fiber_yieldi(int i){   FiberYieldValue val;   val.intv=i;   fiber_yield(val); }
 void fiber_yieldf(float f){   FiberYieldValue val;   val.floatv=f;   fiber_yield(val); }
