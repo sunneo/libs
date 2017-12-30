@@ -13,7 +13,7 @@
 #endif
 
 typedef int (*CompareFunctionPtr)(const void*,const void*);
-typedef void (*FunctionPtr)(void*);
+typedef void (*FunctionPtr)(void*,void*);
 #define CASE_LEAF 0
 #define CASE_NO_PREDECESSOR 1
 #define CASE_NO_RIGHT_CHILD 2
@@ -26,7 +26,7 @@ typedef struct DupBinNode{
 }DupBinNode;
 
 __inline static DupBinNode* __fastcall dup_node(const BinNode* node);
-__inline static void        __fastcall dupbinnode_visit(DupBinNode* n,FunctionPtr fn);
+__inline static void        __fastcall dupbinnode_visit(DupBinNode* n,FunctionPtr fn,void* closure);
 __inline static void        __fastcall dupbinnode_dupchild(DupBinNode* n);
 __inline static BinNode*    __fastcall binnode_create(const BST* bst,const BinNode* parent,const void* key,const void* data);
 __inline static void        __fastcall binnode_create_child(BST* bst,BinNode* parent,unsigned int idx,const void* key,const void* data);
@@ -34,10 +34,10 @@ __inline static BinNode*    __fastcall bst_search_node(const BST* tree,const voi
 __inline static BinNode*    __fastcall bst_minmax_node(const BST* tree,int _max);
 __inline static BinNode*    __fastcall bst_predecessor(const BinNode* n);
 __inline static unsigned int  __fastcall binnode_parent_idx(const BinNode* n);
-__inline static void        __fastcall function_ptr_to_node_or_data(FunctionPtr fn,int bNode,BinNode* node);
-         static void        __fastcall bst_bfs_dfs_foreach(BST* tree,FunctionPtr fn,int dfs,int bNode);
+__inline static void        __fastcall function_ptr_to_node_or_data(FunctionPtr fn,int bNode,BinNode* node,void* closure);
+         static void        __fastcall bst_bfs_dfs_foreach(BST* tree,FunctionPtr fn,int dfs,int bNode,void* closure);
 __inline static void                   binnode_free(void* n);
-
+__inline static BinNode* __fastcall    bst_minmax_node_from_node(const BinNode* nodeRoot,int _max);
 static void* malloc_s(unsigned int size){
    void* ret = malloc(size);
    if(!ret){
@@ -167,6 +167,24 @@ bst_minmax_node(const BST* tree,int _max){
    __traceFunction("[get] leave");
    return prev;
 }
+
+__inline static BinNode* __fastcall
+bst_minmax_node_from_node(const BinNode* nodeRoot,int _max){
+   BinNode* n,*prev;
+   __traceFunction("enter");
+   if(tree->size == 0) {
+	  __traceFunction("[empty] leave");
+	  return 0;
+   }
+   n = nodeRoot;
+   while(n){
+      prev = n;
+      n = n->child[ _max ];
+   }
+   __traceFunction("[get] leave");
+   return prev;
+}
+
 
 void* BINTreeCallConv
 bst_min(const BST* tree){
@@ -314,11 +332,35 @@ bst_erase(BST* tree,const void* key){
    __traceFunction("leave");
 }
 
+typedef struct TreeNodeCollector{
+	BinNode** node;
+	unsigned int size;
+	int idx;
+}TreeNodeCollector;
+
+static void tree_node_collector_functor(BinNode* node, void* closure){
+	TreeNodeCollector* collector = (TreeNodeCollector*)closure;
+	collector->node[collector->idx]=node;
+	++collector->idx;
+}
+
+static TreeNodeCollector* create_collector_from_bst(BST* tree){
+	TreeNodeCollector* ret = (TreeNodeCollector*)malloc(sizeof(TreeNodeCollector));
+	ret->node = (BinNode**)malloc(sizeof(BinNode*)*tree->size);
+	ret->size=tree->size;
+	ret->idx = 0;
+	return ret;
+}
+
+
+
+
 void BINTreeCallConv
 bst_clear(BST* tree){
    __traceFunction("enter");
+   
    if(tree->elesize){
-      bst_bfs_dfs_foreach(tree,binnode_free,0,1);  
+      bst_bfs_dfs_foreach(tree,binnode_free,0,1,NULL);  
    }
    tree->size = 0;
    __traceFunction("leave");
@@ -334,15 +376,15 @@ bst_delete(BST* tree){
 
 
 __inline static void __fastcall 
-function_ptr_to_node_or_data(FunctionPtr fn,int bNode,BinNode* node){
+function_ptr_to_node_or_data(FunctionPtr fn,int bNode,BinNode* node,void* closure){
    if(!node) {
 	  return;
    }
-   fn(bNode?(void*)node:node->data);
+   fn(bNode?(void*)node:node->data,closure);
 }
 
 static void __fastcall
-bst_bfs_foreach_helper(BST* tree,FunctionPtr fn,int bNode){
+bst_bfs_foreach_helper(BST* tree,FunctionPtr fn,int bNode,void* closure){
    BinNode** n;
    int back,front;
    __traceFunction("enter");
@@ -356,14 +398,14 @@ bst_bfs_foreach_helper(BST* tree,FunctionPtr fn,int bNode){
       if(n[ front ]->child[ 1 ]) {
          n[ back++ ] = n[ front ]->child[ 1 ];
       }
-      function_ptr_to_node_or_data(fn,bNode,n[ front++ ]);
+      function_ptr_to_node_or_data(fn,bNode,n[ front++ ],closure);
    }
    free(n);
    __traceFunction("leave");
 }
 
 static void __fastcall
-bst_dfs_foreach_helper(BST* tree,FunctionPtr fn,int bNode){
+bst_dfs_foreach_helper(BST* tree,FunctionPtr fn,int bNode,void* closure){
    DupBinNode** n;
    DupBinNode* cur;
    int back = 0;
@@ -377,7 +419,7 @@ bst_dfs_foreach_helper(BST* tree,FunctionPtr fn,int bNode){
    while(back){
       cur = n[ --back ];
       if(!cur->visited){
-         dupbinnode_visit(cur,fn);
+         dupbinnode_visit(cur,fn,closure);
          dupbinnode_dupchild(cur);
          if(cur->right) {
             n[ back++ ] = cur->right;
@@ -395,39 +437,39 @@ bst_dfs_foreach_helper(BST* tree,FunctionPtr fn,int bNode){
 }
 
 static void __fastcall
-bst_bfs_dfs_foreach(BST* tree,FunctionPtr fn,int dfs,int bNode){
+bst_bfs_dfs_foreach(BST* tree,FunctionPtr fn,int dfs,int bNode,void* closure){
    __traceFunction("enter");
    if(tree->size == 0) {
 	  __traceFunction("[empty] leave");
 	  return;
    }
    if(dfs){
-      bst_dfs_foreach_helper(tree,fn,bNode);
+      bst_dfs_foreach_helper(tree,fn,bNode,closure);
    }
    else{
-      bst_bfs_foreach_helper(tree,fn,bNode);
+      bst_bfs_foreach_helper(tree,fn,bNode,closure);
    }
    __traceFunction("leave");
 }
 
 void BINTreeCallConv 
-bst_bfs_foreach(BST* tree,FunctionPtr fn){
+bst_bfs_foreach(BST* tree,FunctionPtr fn,void* closure){
    __traceFunction("enter");
-   bst_bfs_dfs_foreach(tree,fn,0,0);
+   bst_bfs_dfs_foreach(tree,fn,0,0,closure);
    __traceFunction("leave");
 }
 
 void BINTreeCallConv 
-bst_dfs_foreach(BST* tree,FunctionPtr fn){
+bst_dfs_foreach(BST* tree,FunctionPtr fn,void* closure){
    __traceFunction("enter");
-   bst_bfs_dfs_foreach(tree,fn,1,0);
+   bst_bfs_dfs_foreach(tree,fn,1,0,closure);
    __traceFunction("leave");
 }
 
 void BINTreeCallConv 
-bst_preorder(BST* tree,FunctionPtr fn){
+bst_preorder(BST* tree,FunctionPtr fn,void* closure){
    __traceFunction("enter");
-   bst_dfs_foreach(tree,fn);
+   bst_dfs_foreach(tree,fn,closure);
    __traceFunction("leave");
 }
 
@@ -445,10 +487,10 @@ dup_node(const BinNode* node){
 }
 
 __inline static void __fastcall
-dupbinnode_visit(DupBinNode* n,FunctionPtr fn){
+dupbinnode_visit(DupBinNode* n,FunctionPtr fn,void* closure){
    if(!n->visited){
       if(n->node) {
-		 fn(n->node->data);
+		 fn(n->node->data,closure);
 	  }
       n->visited = 1;
    }
@@ -472,7 +514,7 @@ dupbinnode_dupchild(DupBinNode* n){
 }
 
 void BINTreeCallConv 
-bst_inorder(BST* tree,FunctionPtr fn){
+bst_inorder(BST* tree,FunctionPtr fn,void* closure){
    BinNode** s;
    unsigned int back = 0;
    BinNode* cur = 0;
@@ -490,7 +532,7 @@ bst_inorder(BST* tree,FunctionPtr fn){
       }
       if(back) {
          cur = s[ --back ];
-         fn(cur->data);
+         fn(cur->data,closure);
          cur = cur->child[ 1 ];
       }
       else {
@@ -503,7 +545,7 @@ bst_inorder(BST* tree,FunctionPtr fn){
 
 
 void BINTreeCallConv 
-bst_postorder(BST* tree,FunctionPtr fn){
+bst_postorder(BST* tree,FunctionPtr fn,void* closure){
    DupBinNode** s;
    unsigned int back = 0;
    DupBinNode* cur = 0;
@@ -537,7 +579,7 @@ bst_postorder(BST* tree,FunctionPtr fn){
          }
       }
       else {
-         dupbinnode_visit(cur,fn);
+         dupbinnode_visit(cur,fn,closure);
          --back;
       }
    }

@@ -85,11 +85,11 @@ DLLIMPORT void         BINTreeCallConv bst_clear(BST* tree);
  * delete BST.
  */
 DLLIMPORT void         BINTreeCallConv bst_delete(BST* tree);
-DLLIMPORT void         BINTreeCallConv bst_bfs_foreach(BST* tree,void(*fn)(void*));
-DLLIMPORT void         BINTreeCallConv bst_dfs_foreach(BST* tree,void(*fn)(void*));
-DLLIMPORT void         BINTreeCallConv bst_preorder(BST* tree,void(*fn)(void*));
-DLLIMPORT void         BINTreeCallConv bst_inorder(BST* tree,void(*fn)(void*));
-DLLIMPORT void         BINTreeCallConv bst_postorder(BST* tree,void(*fn)(void*));
+DLLIMPORT void         BINTreeCallConv bst_bfs_foreach(BST* tree,void(*fn)(void*,void*),void* closure);
+DLLIMPORT void         BINTreeCallConv bst_dfs_foreach(BST* tree,void(*fn)(void*,void*),void* closure);
+DLLIMPORT void         BINTreeCallConv bst_preorder(BST* tree,void(*fn)(void*,void*),void* closure);
+DLLIMPORT void         BINTreeCallConv bst_inorder(BST* tree,void(*fn)(void*,void*),void* closure);
+DLLIMPORT void         BINTreeCallConv bst_postorder(BST* tree,void(*fn)(void*,void*),void* closure);
 
 
 DLLIMPORT BSTIter      BINTreeCallConv bst_next_iter(BSTIter iter);

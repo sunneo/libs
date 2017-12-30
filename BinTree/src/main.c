@@ -34,13 +34,13 @@ int main(int argc, char *argv[]){
    }
    printf("size = %d\n",bst_size(bst));
    system("pause");*/
-   //bst_inorder(bst,printkey);
+   /* bst_inorder(bst,printkey); */
    iter = bst_get_iter(bst);
    while( bst_iter_hasNext(iter) ){
       /*iter = bst_next_iter(iter);*/
       printkey( bst_iter_next(iter) );
    }
-   //bst_iter_delete(iter);
+   /* bst_iter_delete(iter); */
    bst_delete(bst);
    return 0;
 }
