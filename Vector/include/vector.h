@@ -10,7 +10,7 @@
 #    define DLLIMPORT
 #  endif
 #  ifndef VECTORCall
-#    define VECTORCall __attribute__((__fastcall__))
+#    define VECTORCall
 #  endif
 
 typedef void* VectorIter;
