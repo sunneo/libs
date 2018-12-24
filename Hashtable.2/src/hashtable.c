@@ -185,7 +185,7 @@ void* hashtbl_get(const struct Hashtable* tbl,const void* key){
    int nodeIdx = 0;
    debugEnter
    if(key == 0){
-	  return;
+	  return 0;
    }
    idx = tbl->hashfnc(key) % get_hash_entry_size();
    ret = __hashtbl_get_internel(&nodeIdx,tbl,key,idx);
