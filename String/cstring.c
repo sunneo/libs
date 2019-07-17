@@ -1,4 +1,6 @@
 #include "cstring.h"
+#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -25,7 +27,7 @@ copy_mem ( void* dst,const void* src,unsigned size ) {
 }
 
 
-String* StringCall string_concat_format ( String* dst,const char* fmt,... ) {
+String* StringCall string_append_format ( String* dst,const char* fmt,... ) {
    char* tmpbuf;
    int tmpsize = 4095;
    int len = 0;
@@ -49,7 +51,7 @@ String* StringCall string_concat_format ( String* dst,const char* fmt,... ) {
          break;
       }
    }
-   string_concat_cstr ( dst,tmpbuf );
+   string_append_cstr ( dst,tmpbuf );
    va_end ( parg );
    free ( tmpbuf );
    return dst;
@@ -99,7 +101,7 @@ string_empty ( const String* str ) {
 char* StringCall
 string_buffer ( String* str ) {
    if ( *string_end ( str ) != 0 ) {
-      string_concat_char ( str,0 );
+      string_append_char ( str,0 );
       --str->length;
    }
    return str->a;
@@ -138,7 +140,7 @@ string_clear ( String* str ) {
 }
 
 String* StringCall
-string_concat_cstr ( String* dst,const char* src ) {
+string_append_cstr ( String* dst,const char* src ) {
    unsigned len = cstring_length ( src );
    unsigned end_off = dst->length;
    string_realloc ( dst,dst->length + len );
@@ -155,7 +157,7 @@ string_realloc ( String* str,unsigned newlen ) {
 }
 
 String* StringCall
-string_concat ( String* dst,const String* src ) {
+string_append ( String* dst,const String* src ) {
    unsigned end_off = dst->length;
    string_realloc ( dst,dst->length  + src->length );
    copy_mem ( dst->a + end_off,src->a,src->length );
@@ -163,7 +165,7 @@ string_concat ( String* dst,const String* src ) {
 }
 
 String* StringCall
-string_concat_char ( String* dst,char c ) {
+string_append_char ( String* dst,char c ) {
    string_realloc ( dst,dst->length +1 );
    * ( string_end ( dst )-1 ) = c;
    return dst;
@@ -176,5 +178,7 @@ string_delete ( String* str ) {
 }
 
 char*   StringCall
-string_findfirst ( const String* str,char* idx_token,const char* token ) {
+string_findfirst ( const String* str,int idx_token,const char* token ) {
+    if (idx_token >= string_length(str) || idx_token < 0) return NULL;
+    return strstr (string_buffer(str) + idx_token, token);
 }

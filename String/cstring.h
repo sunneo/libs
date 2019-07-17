@@ -20,12 +20,12 @@ char*   StringCall string_end(const String* str);
 String* StringCall string_copy(String* dst,const String* src);
 String* StringCall string_copy_cstr(String* dst,const char* src);
 void    StringCall string_clear(String* str);
-String* StringCall string_concat(String* dst,const String* src);
-String* StringCall string_concat_cstr(String* dst,const char* src);
-String* StringCall string_concat_format(String* dst,const char* fmt,...);
-String* StringCall string_concat_char(String* dst,char c);
+String* StringCall string_append(String* dst,const String* src);
+String* StringCall string_append_cstr(String* dst,const char* src);
+String* StringCall string_append_format(String* dst,const char* fmt,...);
+String* StringCall string_append_char(String* dst,char c);
 void    StringCall string_delete(String* str);
-char*   StringCall string_findfirst(const String* str,char* idx_token,const char* token);
+char*   StringCall string_findfirst(const String* str,int idx_token,const char* token);
 
 
 #endif
