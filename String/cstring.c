@@ -182,3 +182,12 @@ string_findfirst ( const String* str,int idx_token,const char* token ) {
     if (idx_token >= string_length(str) || idx_token < 0) return NULL;
     return strstr (string_buffer(str) + idx_token, token);
 }
+
+int     StringCall string_indexof_char(const String* str, int idx_token, char c){
+    return string_indexof_string(str, idx_token, &c);
+}
+int     StringCall string_indexof_string(const String* str, int idx_token, const char* token){
+    char* s = string_findfirst(str, idx_token, token);
+    if (s == NULL) return -1;
+    return (int)((unsigned)s - (unsigned)str->a);
+}

@@ -26,6 +26,7 @@ String* StringCall string_append_format(String* dst,const char* fmt,...);
 String* StringCall string_append_char(String* dst,char c);
 void    StringCall string_delete(String* str);
 char*   StringCall string_findfirst(const String* str,int idx_token,const char* token);
-
+int     StringCall string_indexof_char(const String* str, int idx_token, char c);
+int     StringCall string_indexof_string(const String* str, int idx_token, const char* token);
 
 #endif

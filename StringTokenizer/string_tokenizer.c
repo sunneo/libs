@@ -1,6 +1,6 @@
 #include "string_tokenizer.h"
 #include <string.h>
-
+#include <stdlib.h>
 #ifndef __fastcall
 #  ifdef __GNUC
 #    define __fastcall __attribute__(( regparm(3) ))
@@ -14,7 +14,8 @@ strdup_length(const char* str,int* len){
    char* ret;
    *len = strlen(str) + 1;
    ret = (char*)malloc(*len);
-   return strncpy(ret,str,*len);
+   strncpy(ret,str,*len);
+   return ret;
 }
 
 StringTokenizer* 
@@ -29,7 +30,7 @@ strtok_new(const char* str,const char* delim){
    return token;
 }
 
-__inline static int __fastcall
+__inline static int 
 strtok_test(StringTokenizer* token,char** testCurrent,char** testNext){
    if( token == NULL ) return 0;  
    *testNext = token->nextToken;       /* copy */
@@ -59,6 +60,7 @@ void
 strtok_delete(StringTokenizer* token){
    if(!token) return;
    if(token->dupStr) free(token->dupStr);
+   token->dupStr = NULL;
    free(token);
 }
 
@@ -75,10 +77,17 @@ int strtok_count(StringTokenizer* token){
    if(!token) return 0;
    if( token->count != -1 ) return token->count;
    token->count = 0;
-   while( strtok_has_more(token ) ) {
-      token->nextToken[-1] = (*token->delim);
+   char* current;
+   char* next;
+   while (strtok_test(token, &current, &next)) {
+       if (next > 1){
+           *(next - 1) = (*token->delim);
+       }
       strtok_next(token);
       ++token->count;
+   }
+   if (next > 1){
+       *(next - 1) = (*token->delim);
    }
    strtok_rewind(token);
    return token->count;
