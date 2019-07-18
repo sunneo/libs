@@ -90,7 +90,9 @@ hashtbl_new(unsigned int (*hashfnc)(const void*),int (*keyEQL)(const void*,const
    ret = (struct Hashtable*)malloc(sizeof(struct Hashtable));
 
    ret->size = 0;
-   ret->entry = (void**)malloc( sizeof(void*) * get_hash_entry_size() );
+   int entrySize = get_hash_entry_size();
+   ret->entry = (void**)malloc( sizeof(void*) * entrySize );
+   memset(ret->entry, 0, sizeof(void*)*entrySize);
    ret->hashfnc = hashfnc?hashfnc:defaultHashFnc;
    ret->keyEQL = keyEQL?keyEQL:defaultKeyEQL;
 
