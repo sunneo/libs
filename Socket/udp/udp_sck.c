@@ -7,6 +7,11 @@ UDPSocket* udp_sck_create()
    
    return ret;
 }
+int udp_get_last_error(const UDPSocket* sck)
+{
+   return sck->lastError;
+}
+
 void udp_server_bind(UDPSocket* sck,int port)
 {
    if(!sck) return;
