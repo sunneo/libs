@@ -1,5 +1,6 @@
 #include "hashtable.h"
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #define HASH_ENTRY_SIZE 4096
 #define HASHNODE_BUCKET_LENGTH 32
@@ -13,14 +14,14 @@
 
 typedef struct HashNode{
    int size;
-   const void* key[HASHNODE_BUCKET_LENGTH];
-   const void* value[HASHNODE_BUCKET_LENGTH];
+   void* key[HASHNODE_BUCKET_LENGTH];
+   void* value[HASHNODE_BUCKET_LENGTH];
    struct HashNode *prev;
    struct HashNode *next;
 }HashNode;
 
-__inline static void __swap(const void** a,register int idx,register int idx2){
-   const void* t = a[ idx ];
+__inline static void __swap(void** a,register int idx,register int idx2){
+   void* t = a[ idx ];
    a[ idx ] = a[ idx2 ];
    a[ idx2 ] = t;
 }
@@ -33,8 +34,8 @@ __inline static void __hashnode_swap_idx(HashNode* n,register int idx1,register 
 static HashNode* hashnode_new(const void* key,const void* data){
    HashNode* ret = (HashNode*)malloc(sizeof(HashNode));
    ret->size = 1;
-   ret->key[0] = key;
-   ret->value[0] = data;
+   ret->key[0] = (void*)key;
+   ret->value[0] = (void*)data;
    ret->prev = 0;
    ret->next = 0;
    return ret;
@@ -141,8 +142,8 @@ __hashnode_pushback(HashNode* n,const void* key,const void* value){
    if(back >= HASHNODE_BUCKET_LENGTH){
 	  return 0;
    }
-   n->key[ back ] = key;
-   n->value[ back ] = value;
+   n->key[ back ] = (void*)key;
+   n->value[ back ] = (void*)value;
    ++n->size; 
    return 1;
 }
@@ -249,9 +250,12 @@ void* hashtbl_remove(struct Hashtable* tbl,const void* key){
 		 }
 	  }
       value = node->value[ 0 ];
+      free(node->key[0]);
       free(node);
    }
    else{
+          free(node->key[ nodeIdx ]);
+          node->key[nodeIdx] = NULL;
 	  value = node->value[ nodeIdx ];
 	  __hashnode_swap_idx(node,nodeIdx,node->size-1);
 	  --node->size;

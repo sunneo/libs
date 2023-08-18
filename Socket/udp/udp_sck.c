@@ -54,7 +54,16 @@ int udp_socket_write(UDPSocket* sck, const void* data, int len,struct sockaddr* 
 {
    if(sck->fd <= 0) return 0;
    int slen = sizeof(struct sockaddr_in);
-   return sendto(sck->fd, data, len , 0, (struct sockaddr*) addr, slen);
+   int ret = sendto(sck->fd, data, len , MSG_CONFIRM, (struct sockaddr*) addr, slen);
+   if(ret >= 0)
+   {
+      sck->lastError=0;
+   }
+   else
+   {
+      sck->lastError=ret;
+   }
+   return ret;
 }
 
 __inline static int
@@ -72,6 +81,7 @@ isIPAddr ( const char* str )
 void udp_socket_connect(UDPSocket* sck,const char* hostaddr,int port)
 {
    if ( !sck ) return;
+   sck->fd = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
    struct hostent* host;
    if ( port == 0 )
    {
@@ -91,7 +101,7 @@ void udp_socket_connect(UDPSocket* sck,const char* hostaddr,int port)
    sck->addr.sin_port = htons(port);
    sck->addr.sin_addr.s_addr = inet_addr(hostaddr);
    memset(sck->addr.sin_zero, '\0', sizeof(sck->addr.sin_zero));
-   sck->lastError = connect(sck->fd, (struct sockaddr*)&sck->addr, sizeof(struct sockaddr));
+   sck->lastError = connect(sck->fd, (struct sockaddr*)&sck->addr, sizeof(struct sockaddr_in));
 }
 
 void udp_socket_delete(UDPSocket* sck)
