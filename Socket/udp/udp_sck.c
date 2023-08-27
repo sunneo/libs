@@ -3,6 +3,11 @@
 #ifdef WIN32
 #pragma comment(lib, "Ws2_32.lib")
 #endif
+#ifdef __cplusplus
+#define EXTERN extern "C"
+#else 
+#define EXTERN
+#endif
 
 static char* StringCopy(char* dst, const char* src, size_t len)
 {
@@ -45,9 +50,20 @@ static void CloseSocket(SOCKET sck)
 #endif
 }
 
-
+EXTERN
 UDPSocket* udp_socket_create()
 {
+#ifdef WIN32
+    {
+        static BOOL wsaStarted = FALSE;
+        if (!wsaStarted)
+        {
+            WSADATA wsaData;
+            // Initialize Winsock
+            WSAStartup(MAKEWORD(2, 2), &wsaData);
+        }
+    }
+#endif
    UDPSocket* ret = (UDPSocket*)malloc(sizeof(UDPSocket));
    if (ret == NULL)
    {
@@ -58,11 +74,15 @@ UDPSocket* udp_socket_create()
    
    return ret;
 }
+
+EXTERN
 int udp_get_last_error(const UDPSocket* sck)
 {
    return sck->lastError;
 }
 
+
+EXTERN
 void udp_server_bind(UDPSocket* sck,int port)
 {
    if(!sck) return;
@@ -73,11 +93,16 @@ void udp_server_bind(UDPSocket* sck,int port)
       fprintf(stderr, "%s %d %s create socket failed:%s",__FILE__,__LINE__,__func__, StringError(sck->lastError));
       return;
    }
-   char tr = '1';
-   sck->lastError = setsockopt(sck->fd, SOL_SOCKET,SO_REUSEADDR, &tr,sizeof(int));
+#ifdef WIN32
+   BOOL tr = TRUE;
+   sck->lastError = setsockopt(sck->fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&tr, sizeof(BOOL));
+#elif defined __linux__
+   int tr = 1;
+   sck->lastError = setsockopt(sck->fd, SOL_SOCKET,SO_REUSEADDR,(const char*)&tr,sizeof(int));
+#endif
    if(sck->lastError < 0)
    {
-       fprintf(stderr, "%s %d %s create socket failed:%s",__FILE__,__LINE__,__func__, StringError(sck->lastError));
+       fprintf(stderr, "%s %d %s setsockopt failed:%s",__FILE__,__LINE__,__func__, StringError(sck->lastError));
        return;
    }
    sck->addr.sin_family = AF_INET;
@@ -94,12 +119,16 @@ void udp_server_bind(UDPSocket* sck,int port)
    }
 }
 
+
+EXTERN
 int udp_socket_read(UDPSocket* sck, void* ptr, int len, struct sockaddr* addr)
 {
    if(sck->fd <= 0) return 0; 
    int slen = sizeof(struct sockaddr_in);
    return recvfrom(sck->fd, ptr, len,0,  (struct sockaddr*)addr,&slen);
 }
+
+EXTERN
 int udp_socket_write(UDPSocket* sck, const void* data, int len,struct sockaddr* addr)
 {
    if(sck->fd <= 0) return 0;
@@ -133,7 +162,7 @@ isIPAddr ( const char* str )
    return 1;
 }
 
-
+EXTERN
 void udp_socket_connect(UDPSocket* sck,const char* hostaddr,int port)
 {
    if ( !sck ) return;
@@ -160,6 +189,8 @@ void udp_socket_connect(UDPSocket* sck,const char* hostaddr,int port)
    sck->lastError = connect(sck->fd, (struct sockaddr*)&sck->addr, sizeof(struct sockaddr_in));
 }
 
+
+EXTERN
 void udp_socket_delete(UDPSocket* sck)
 {
    if(sck->fd > 0) CloseSocket(sck->fd);
