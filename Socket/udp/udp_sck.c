@@ -33,7 +33,15 @@ static const char* StringError(int errcode)
     (void)strerror_s(errBuf, 4096, errcode);
     return errBuf;
 #elif defined __linux__
-    return strerror(dst, src, len);
+    return strerror(errcode);
+#endif
+}
+static void CloseSocket(SOCKET sck)
+{
+#ifdef WIN32
+   closesocket(sck);
+#elif defined __linux__
+   close(sck);
 #endif
 }
 
@@ -154,7 +162,7 @@ void udp_socket_connect(UDPSocket* sck,const char* hostaddr,int port)
 
 void udp_socket_delete(UDPSocket* sck)
 {
-   if(sck->fd > 0) closesocket(sck->fd);
+   if(sck->fd > 0) CloseSocket(sck->fd);
    sck->fd = 0;
    free(sck);
 }

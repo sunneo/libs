@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include "tcp_sck.h"
-
+#include <string.h>
 static void errHandler(const char* fnc,const char* reason,void* param){
    fprintf(stderr,"%s (%s)\n",fnc,reason);
    errno=0;

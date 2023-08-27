@@ -1,4 +1,5 @@
 #include "tcp_sck.h"
+#include <ctype.h>
 #ifdef __linux__
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -6,6 +7,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <arpa/inet.h>
+
 #elif defined WIN32
 #pragma comment(lib, "Ws2_32.lib")
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -33,6 +36,16 @@ enum TCPSERERR
    TCPSERERR_ERRNO_IS_SET,
    TCPSERERR_MAX
 };
+
+static void CloseSocket(SOCKET sck)
+{
+#ifdef WIN32
+   closesocket(sck);
+#elif defined __linux__
+   close(sck);
+#endif
+}
+
 static char* StringCopy(char* dst, const char* src, size_t len)
 {
 #ifdef WIN32
@@ -62,7 +75,7 @@ static const char* StringError(int errcode)
     (void) strerror_s(errBuf, 4096, errcode);
     return errBuf;
 #elif defined __linux__
-    return strerror(dst, src, len);
+    return strerror(errcode);
 #endif
 }
 
@@ -538,7 +551,7 @@ void tcp_socket_close ( TCPSocket* sck )
             fclose ( sck->rf );
          }
       }
-      closesocket ( sck->fd );
+      CloseSocket(sck->fd );
    }
    sck->wf = 0;
    sck->rf = 0;
