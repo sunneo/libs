@@ -1,9 +1,51 @@
 #include "udp_sck.h"
 #include <ctype.h>
+#ifdef WIN32
+#pragma comment(lib, "Ws2_32.lib")
+#endif
+
+static char* StringCopy(char* dst, const char* src, size_t len)
+{
+#ifdef WIN32
+    errno_t err = strncpy_s(dst, len, src, len);
+    if (err != 0)
+    {
+
+    }
+    return dst;
+#elif defined __linux__
+    return strncpy(dst, src, len);
+#endif
+}
+
+static char* errBuf;
+static const char* StringError(int errcode)
+{
+#ifdef WIN32
+    if (errBuf == NULL)
+    {
+        errBuf = (char*)malloc(4096);
+        if (errBuf == NULL)
+        {
+            return "Error Happened in StringError";
+        }
+    }
+    (void)strerror_s(errBuf, 4096, errcode);
+    return errBuf;
+#elif defined __linux__
+    return strerror(dst, src, len);
+#endif
+}
+
 
 UDPSocket* udp_socket_create()
 {
    UDPSocket* ret = (UDPSocket*)malloc(sizeof(UDPSocket));
+   if (ret == NULL)
+   {
+       fprintf(stderr, "%s %d %s Failed to create UDPSocket object :%s", __FILE__, __LINE__, __func__, StringError(errno));
+       return NULL;
+   }
    memset(ret,0,sizeof(UDPSocket));
    
    return ret;
@@ -20,14 +62,14 @@ void udp_server_bind(UDPSocket* sck,int port)
    if(sck->fd < 0)
    {
       sck->lastError = sck->fd;
-      fprintf(stderr, "%s %d %s create socket failed:%s",__FILE__,__LINE__,__func__,strerror(sck->lastError));
+      fprintf(stderr, "%s %d %s create socket failed:%s",__FILE__,__LINE__,__func__, StringError(sck->lastError));
       return;
    }
    char tr = '1';
    sck->lastError = setsockopt(sck->fd, SOL_SOCKET,SO_REUSEADDR, &tr,sizeof(int));
    if(sck->lastError < 0)
    {
-       fprintf(stderr, "%s %d %s create socket failed:%s",__FILE__,__LINE__,__func__,strerror(sck->lastError));
+       fprintf(stderr, "%s %d %s create socket failed:%s",__FILE__,__LINE__,__func__, StringError(sck->lastError));
        return;
    }
    sck->addr.sin_family = AF_INET;
@@ -38,7 +80,7 @@ void udp_server_bind(UDPSocket* sck,int port)
    sck->lastError = bind(sck->fd,(struct sockaddr*)&sck->addr,sizeof(struct sockaddr));
    if(sck->lastError < 0)
    {
-       fprintf(stderr, "%s %d %s bind failed:%s",__FILE__,__LINE__,__func__,strerror(sck->lastError));
+       fprintf(stderr, "%s %d %s bind failed:%s",__FILE__,__LINE__,__func__, StringError(sck->lastError));
        return;
      
    }
@@ -54,7 +96,13 @@ int udp_socket_write(UDPSocket* sck, const void* data, int len,struct sockaddr* 
 {
    if(sck->fd <= 0) return 0;
    int slen = sizeof(struct sockaddr_in);
-   int ret = sendto(sck->fd, data, len , MSG_CONFIRM, (struct sockaddr*) addr, slen);
+   int flag = 0;
+#ifdef WIN32
+   flag = 0;
+#elif defined __linux__
+   flag = MSG_CONFIRM;
+#endif
+   int ret = sendto(sck->fd, data, len , flag, (struct sockaddr*) addr, slen);
    if(ret >= 0)
    {
       sck->lastError=0;
@@ -106,7 +154,7 @@ void udp_socket_connect(UDPSocket* sck,const char* hostaddr,int port)
 
 void udp_socket_delete(UDPSocket* sck)
 {
-   if(sck->fd > 0) close(sck->fd);
+   if(sck->fd > 0) closesocket(sck->fd);
    sck->fd = 0;
    free(sck);
 }

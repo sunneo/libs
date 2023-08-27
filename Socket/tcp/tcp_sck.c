@@ -1,14 +1,28 @@
 #include "tcp_sck.h"
+#ifdef __linux__
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <netdb.h>
+#elif defined WIN32
+#pragma comment(lib, "Ws2_32.lib")
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <winsock2.h>
+#include <WS2tcpip.h>
+#endif
+#include <stdlib.h>
+#include <string.h>
+
 #include <errno.h>
 #define TCPDEFAULT_LISTEN 64
+#ifdef __cplusplus
+#define EXTERN extern "C"
+#else 
+#define EXTERN
+#endif
+
 enum TCPSERERR
 {
    TCPSERERR_NOERR,
@@ -19,6 +33,39 @@ enum TCPSERERR
    TCPSERERR_ERRNO_IS_SET,
    TCPSERERR_MAX
 };
+static char* StringCopy(char* dst, const char* src, size_t len)
+{
+#ifdef WIN32
+    errno_t err = strncpy_s(dst, len, src, len);
+    if (err != 0)
+    {
+        
+    }
+    return dst;
+#elif defined __linux__
+    return strncpy(dst, src, len);
+#endif
+}
+
+static char* errBuf;
+static const char* StringError(int errcode)
+{
+#ifdef WIN32
+    if (errBuf == NULL)
+    {
+        errBuf = (char*)malloc(4096);
+        if (errBuf == NULL)
+        {
+            return "Error Happened in StringError";
+        }
+    }
+    (void) strerror_s(errBuf, 4096, errcode);
+    return errBuf;
+#elif defined __linux__
+    return strerror(dst, src, len);
+#endif
+}
+
 static int isLocalIP ( const char* addr );
 static const char* private_tcpsererr_strings[] =
 {
@@ -33,9 +80,16 @@ static const char* private_tcpsererr_strings[] =
 static void tcp_sck_set_lasterr ( TCPSocket* sck,int err );
 static void tcp_sck_set_buffered ( TCPSocket* sck,int bBuffered )
 {
-   sck->buffered = bBuffered;
+#ifdef WIN32
+    // not supported
+    sck->buffered = 0;
+#elif defined __linux__
+    sck->buffered = bBuffered;
+#endif
+   
 }
 
+EXTERN
 TCPServerSocket *tcp_server_create ( int buffered )
 {
    TCPServerSocket* ret =  ( TCPServerSocket* ) calloc ( 1,sizeof ( TCPServerSocket ) );
@@ -59,10 +113,14 @@ isIPAddr ( const char* str )
    return 1;
 }
 
+
+EXTERN
 void tcp_server_set_errhandler ( TCPServerSocket* sck,void ( *fnc ) ( const char*,const char*,void* ),void* param )
 {
    tcp_socket_set_errhandler ( ( TCPSocket* ) sck,fnc,param );
 }
+
+EXTERN
 void tcp_socket_set_errhandler ( TCPSocket* sck,void ( *fnc ) ( const char*,const char*,void* ),void*param )
 {
    if ( sck )
@@ -72,6 +130,8 @@ void tcp_socket_set_errhandler ( TCPSocket* sck,void ( *fnc ) ( const char*,cons
    }
 }
 
+
+EXTERN
 void tcp_socket_flush ( TCPSocket* sck )
 {
    if ( sck->wf )
@@ -135,9 +195,15 @@ static unsigned short tcp_sck_get_rawport ( const TCPSocket* sck )
 
 static int tcp_sck_isbuffered ( const TCPSocket* sck )
 {
-   return sck->buffered;
+#ifdef WIN32
+    return 0;
+#elif defined __linux__
+    return sck->buffered;
+#endif
+   
 }
 
+EXTERN
 void tcp_server_bind ( TCPServerSocket* sck,int port )
 {
    const static int flag = 1;
@@ -154,7 +220,7 @@ void tcp_server_bind ( TCPServerSocket* sck,int port )
    tcp_setup_socket_fd ( ( TCPSocket* ) sck );
    tcp_sck_set_rawport ( ( TCPSocket* ) sck,htons ( port ) );
    tcp_sck_set_rawaddr ( ( TCPSocket* ) sck,htonl ( INADDR_ANY ) );
-   if ( setsockopt ( tcp_sck_fd ( ( TCPSocket* ) sck ) , SOL_SOCKET, SO_REUSEADDR, &flag,sizeof ( int ) ) < 0 )
+   if ( setsockopt ( tcp_sck_fd ( ( TCPSocket* ) sck ) , SOL_SOCKET, SO_REUSEADDR, (const char*)&flag,sizeof ( int ) ) < 0 )
    {
       if ( errno && ( ( TCPSocket* ) sck )->ErrorHandler.fnc )
       {
@@ -173,6 +239,7 @@ void tcp_server_bind ( TCPServerSocket* sck,int port )
    }
 }
 
+EXTERN
 void tcp_server_listen ( TCPServerSocket* sck,int queueLen )
 {
    if ( !sck ) return;
@@ -192,6 +259,8 @@ void tcp_server_listen ( TCPServerSocket* sck,int queueLen )
       }
    }
 }
+
+EXTERN
 void tcp_sck_peername ( TCPSocket* sck, char* name, int len )
 {
    struct sockaddr_storage addr;
@@ -232,9 +301,11 @@ void tcp_sck_peername ( TCPSocket* sck, char* name, int len )
          }
       }
    }
-   strncpy ( name, ipstr, len );
+   StringCopy ( name, ipstr, len );
 }
 
+
+EXTERN
 void tcp_server_accept ( TCPServerSocket* sck,TCPSocket* sckin )
 {
    int isbuffered;
@@ -277,7 +348,13 @@ void tcp_server_accept ( TCPServerSocket* sck,TCPSocket* sckin )
       if ( isLocalIP ( peerName ) )
       {
          int one = 1;
-         if ( setsockopt ( sckin->fd,SOL_TCP,TCP_NODELAY,&one,sizeof ( int ) ) < 0 )
+         int level = 0;
+#ifdef WIN32
+         level = IPPROTO_TCP;
+#elif defined __linux__
+         level = SOL_TCP;
+#endif 
+         if ( setsockopt ( sckin->fd, level,TCP_NODELAY,(const char*)&one,sizeof ( int ) ) < 0 )
          {
             if ( errno && ( ( TCPSocket* ) sck )->ErrorHandler.fnc )
             {
@@ -296,6 +373,7 @@ void tcp_server_accept ( TCPServerSocket* sck,TCPSocket* sckin )
       }
       free ( peerName );
       isbuffered =  tcp_sck_isbuffered ( ( TCPSocket* ) sck );
+#ifdef __linux__
       if ( isbuffered )
       {
          sckin->buffered = isbuffered;
@@ -328,27 +406,32 @@ void tcp_server_accept ( TCPServerSocket* sck,TCPSocket* sckin )
             }
          }
       }
+#endif
    }
 
 }
 
+EXTERN
 int  tcp_get_last_error ( const TCPSocket* sck )
 {
    if ( !sck ) return TCPSERERR_NULL_POINTER;
    return tcp_sck_get_lasterr ( sck );
 }
 
+
+EXTERN
 const char* tcp_server_err_string ( int err )
 {
    if ( err > TCPSERERR_MAX )
       err = TCPSERERR_MAX;
    if ( err == TCPSERERR_ERRNO_IS_SET )
    {
-      return strerror ( err );
+      return StringError( err );
    }
    return private_tcpsererr_strings[ err ];
 }
 
+EXTERN
 int tcp_socket_write ( TCPSocket* sck,const void* data,int len )
 {
    int ret = 0;
@@ -376,6 +459,7 @@ int tcp_socket_write ( TCPSocket* sck,const void* data,int len )
    }
    else
    {
+#ifdef __linux__
       ret =  fwrite ( data,1,len,tcp_sck_get_wfile ( ( const TCPSocket* ) sck ) );
       if ( ret < 0 && ferror ( tcp_sck_get_wfile ( ( const TCPSocket* ) sck ) ) )
       {
@@ -385,10 +469,12 @@ int tcp_socket_write ( TCPSocket* sck,const void* data,int len )
             ( ( TCPSocket* ) sck )->ErrorHandler.fnc ( "tcp_socket_write::fwrite",tcp_server_err_string ( ( ( TCPSocket* ) sck )->lastError ), ( ( TCPSocket* ) sck )->ErrorHandler.param );
          }
       }
+#endif
    }
    return ret;
 }
 
+EXTERN
 int tcp_socket_read ( TCPSocket* sck,void* data,int len )
 {
    int ret= 0;
@@ -417,6 +503,7 @@ int tcp_socket_read ( TCPSocket* sck,void* data,int len )
    }
    else
    {
+#ifdef __linux__
       ret =  fread ( data,1,len,tcp_sck_get_rfile ( ( const TCPSocket* ) sck ) );
       if ( ret < 0 && ferror ( tcp_sck_get_rfile ( ( const TCPSocket* ) sck ) ) )
       {
@@ -427,11 +514,14 @@ int tcp_socket_read ( TCPSocket* sck,void* data,int len )
          }
 
       }
+#endif
 
    }
    return ret;
 
 }
+
+EXTERN
 void tcp_socket_close ( TCPSocket* sck )
 {
    if ( !sck ) return;
@@ -448,7 +538,7 @@ void tcp_socket_close ( TCPSocket* sck )
             fclose ( sck->rf );
          }
       }
-      close ( sck->fd );
+      closesocket ( sck->fd );
    }
    sck->wf = 0;
    sck->rf = 0;
@@ -460,12 +550,19 @@ void tcp_socket_delete ( TCPSocket* sck )
    free ( sck );
 }
 
+
+EXTERN
 TCPSocket* tcp_socket_create ( int buffered )
 {
    TCPSocket* ret =  ( TCPSocket* ) calloc ( 1,sizeof ( TCPSocket ) );
    if ( ret )
    {
-      ret->buffered  = buffered;
+#ifdef WIN32
+       // not supported
+       ret->buffered = 0;
+#elif defined __linux__
+       ret->buffered = buffered;
+#endif
    }
    return ret;
 }
@@ -473,6 +570,8 @@ static int isLocalIP ( const char* addr )
 {
    return ( strcmp ( addr,"127.0.0.1" ) == 0 || strcmp ( addr,"localhost" ) ==0 );
 }
+
+EXTERN
 void tcp_socket_connect ( TCPSocket* sck,const char* hostaddr,int port )
 {
    if ( !sck ) return;
@@ -499,7 +598,13 @@ void tcp_socket_connect ( TCPSocket* sck,const char* hostaddr,int port )
    if ( isLocalIP ( hostaddr ) )
    {
       int one = 1;
-      if ( setsockopt ( sck->fd,SOL_TCP,TCP_NODELAY,&one,sizeof ( int ) ) < 0 )
+      int level = 0;
+#ifdef WIN32
+      level = IPPROTO_TCP;
+#elif defined __linux__
+      level = SOL_TCP;
+#endif 
+      if ( setsockopt ( sck->fd, level,TCP_NODELAY, (const char*)&one,sizeof ( int ) ) < 0 )
       {
          if ( errno && ( ( TCPSocket* ) sck )->ErrorHandler.fnc )
          {
@@ -526,6 +631,7 @@ void tcp_socket_connect ( TCPSocket* sck,const char* hostaddr,int port )
       }
 
    }
+#ifdef __linux__
    if ( sck->buffered )
    {
       if ( !sck->wf )
@@ -556,9 +662,12 @@ void tcp_socket_connect ( TCPSocket* sck,const char* hostaddr,int port )
 
       }
    }
+#endif
 
 }
 
+
+EXTERN
 void tcp_server_delete ( TCPServerSocket* sck )
 {
    if ( !sck ) return;

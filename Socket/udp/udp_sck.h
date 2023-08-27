@@ -2,17 +2,25 @@
 #define UDP_SCK_H
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef WIN32
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <WinSock2.h>
+#elif defined __linux__
 #include <unistd.h>
-#include <errno.h>
-#include <string.h>
 #include <netdb.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#define SOCKET int
+#endif
+
+#include <errno.h>
+#include <string.h>
+
 
 typedef struct UDPSocket{
-   int fd;
+   SOCKET fd;
    int lastError;
    struct sockaddr_in addr;
    struct {
