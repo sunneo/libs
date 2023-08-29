@@ -46,6 +46,7 @@ extern "C" {
     void tcp_server_delete(TCPServerSocket* sck);
     int tcp_socket_write(TCPSocket* sck, const void* data, int len);
     int tcp_socket_read(TCPSocket* sck, void* data, int len);
+    int tcp_socket_read_ex(TCPSocket* sck, void* data, int len,int flags);
     void tcp_socket_flush(TCPSocket* sck);
     void tcp_socket_close(TCPSocket* sck);
     void tcp_socket_delete(TCPSocket* sck);

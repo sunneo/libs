@@ -486,9 +486,12 @@ int tcp_socket_write ( TCPSocket* sck,const void* data,int len )
    }
    return ret;
 }
-
 EXTERN
-int tcp_socket_read ( TCPSocket* sck,void* data,int len )
+int tcp_socket_read ( TCPSocket* sck,void* data,int len){
+   return tcp_socket_read_ex(sck,data,len,MSG_WAITALL);
+}
+EXTERN
+int tcp_socket_read_ex ( TCPSocket* sck,void* data,int len,int flag )
 {
    int ret= 0;
    if ( !sck || sck->lastError != 0 )
@@ -503,7 +506,7 @@ int tcp_socket_read ( TCPSocket* sck,void* data,int len )
    sck->lastError = TCPSERERR_NOERR;
    if ( !sck->buffered )
    {
-      ret =  recv ( tcp_sck_fd ( ( const TCPSocket* ) sck ),data,len,MSG_WAITALL );
+      ret =  recv ( tcp_sck_fd ( ( const TCPSocket* ) sck ),data,len,flag);
       if ( ret < 0 && errno != 0 )
       {
          tcp_sck_set_lasterr ( ( TCPSocket* ) sck,TCPSERERR_ERRNO_IS_SET );
