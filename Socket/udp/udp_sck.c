@@ -139,6 +139,10 @@ int udp_socket_write(UDPSocket* sck, const void* data, int len,struct sockaddr* 
 #elif defined __linux__
    flag = MSG_CONFIRM;
 #endif
+   if (addr == NULL)
+   {
+       addr = (struct sockaddr*)&sck->addr;
+   }
    int ret = sendto(sck->fd, data, len , flag, (struct sockaddr*) addr, slen);
    if(ret >= 0)
    {
